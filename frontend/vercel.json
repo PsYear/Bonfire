@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm ci",
+  "buildCommand": "VITE_STATIC_DEPLOYMENT=true npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    {
+      "src": "/(?:capture(?:\\.html)?|capture-api|dist-capture)(?:/.*)?",
+      "status": 404
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "status": 404
+    }
+  ]
+}

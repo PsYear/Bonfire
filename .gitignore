@@ -1,0 +1,10 @@
+.DS_Store
+.screenshots/
+node_modules/
+dist/
+dist-capture/
+.vercel/
+.env
+.env.*
+*.log
+*.tsbuildinfo

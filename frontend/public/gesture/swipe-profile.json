@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "method": "handedness-corrected world palm normal + smoothed fingertip motion",
+  "parameters": {
+    "normalThreshold": 0.5,
+    "travelPalmSizes": 0.7,
+    "minTravel": 0.085,
+    "minSpeed": 0.45,
+    "minDurationMs": 140,
+    "windowMs": 650,
+    "cooldownMs": 550,
+    "rearmFraction": 0.4
+  },
+  "dataset": {
+    "clips": 13,
+    "labels": {
+      "down": 6,
+      "up": 7
+    },
+    "sha256": "eb60d9a3be4ca275d107b0483d694bcb497d8b669ab383fc03a43d9866ed1e48"
+  },
+  "validation": {
+    "candidates": 108,
+    "fitted": {
+      "clip_rate_combinations": 26,
+      "matched_without_opposite": 26,
+      "missed": 0,
+      "opposite_events": 0
+    },
+    "leave_one_clip_out": {
+      "clip_rate_combinations": 26,
+      "matched_without_opposite": 26,
+      "missed": 0,
+      "opposite_events": 0
+    },
+    "artificial_negative_cases": 52,
+    "artificial_negative_events": 0
+  },
+  "limitations": [
+    "Clip labels may contain repeated gestures and return strokes; these are clip-level detection checks.",
+    "Artificial controls are not recorded idle gestures or an estimate of real-world false-positive rate.",
+    "All clips were recorded in one session; new users, lighting, speeds and cameras are unvalidated."
+  ]
+}

@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-capture
+.vercel/
+.DS_Store
+**/.DS_Store
+.env
+.env.*
+capture.html
+vite.capture.config.ts
+src/capture.ts
+src/captureCamera.ts
+src/capture.css
+scripts/fit-hand-swipe.mjs
+scripts/verify-hand-swipe.mjs
+README.md

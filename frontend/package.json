@@ -1,0 +1,28 @@
+{
+  "name": "bonfire",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/prepare-gesture.mjs",
+    "dev": "vite",
+    "predev:capture": "node scripts/prepare-gesture.mjs",
+    "dev:capture": "vite --config vite.capture.config.ts",
+    "prebuild:capture": "node scripts/prepare-gesture.mjs",
+    "build:capture": "tsc && vite build --config vite.capture.config.ts",
+    "predev": "node scripts/prepare-gesture.mjs",
+    "prebuild": "node scripts/prepare-gesture.mjs",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.32",
+    "lucide": "^0.468.0",
+    "three": "^0.171.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.171.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
