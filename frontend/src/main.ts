@@ -2,6 +2,7 @@ import {
   Bot,
   ChevronDown,
   Flame,
+  Github,
   Hand,
   Info,
   Keyboard,
@@ -45,20 +46,27 @@ import {
 
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("App root not found");
-const staticDeployment = import.meta.env.VITE_STATIC_DEPLOYMENT === "true";
 
 app.innerHTML = `
-  <section class="studio-shell${staticDeployment ? " is-static-deployment" : ""}" aria-label="Bonfire 交互式篝火工作台">
+  <section class="studio-shell" aria-label="Bonfire 交互式篝火工作台">
     <div class="scene-host" id="scene-host"></div>
     <div class="scene-shade" aria-hidden="true"></div>
 
     <header class="topbar">
-      <div class="brand-lockup">
-        <span class="brand-mark"><i data-lucide="flame"></i></span>
-        <div>
-          <strong>Bonfire</strong>
-          <span>INTERACTIVE FIRE</span>
+      <div class="brand-area">
+        <div class="brand-lockup">
+          <span class="brand-mark"><i data-lucide="flame"></i></span>
+          <div>
+            <strong>Bonfire</strong>
+            <span>INTERACTIVE FIRE</span>
+          </div>
         </div>
+        <a class="repository-badge" href="https://github.com/PsYear/Bonfire" target="_blank"
+          rel="noopener noreferrer" title="github.com/PsYear/Bonfire"
+          aria-label="在 GitHub 查看 Bonfire 源码（新标签页）">
+          <i data-lucide="github" aria-hidden="true"></i>
+          <span><span class="repository-host">github.com/</span>PsYear/Bonfire</span>
+        </a>
       </div>
       <div class="scene-status" aria-label="实时渲染状态">
         <span class="live-dot"></span>
@@ -459,6 +467,7 @@ createIcons({
     Bot,
     ChevronDown,
     Flame,
+    Github,
     Hand,
     Info,
     Keyboard,
@@ -590,11 +599,7 @@ interactionGuide.addEventListener("toggle", () => {
 renderConversation();
 syncControls();
 syncApiKeyState();
-if (staticDeployment) {
-  switchTab("controls");
-} else {
-  checkAgentHealth();
-}
+void checkAgentHealth();
 if (window.matchMedia("(max-width: 900px)").matches) {
   setPanel(false);
 }
@@ -888,15 +893,18 @@ async function sendAgentCommand(): Promise<void> {
 
   try {
     const result = await agent.send(prompt, config, apiKey);
-    const tool = result.response.tool_calls[0];
-    if (tool?.name === "update_fire_scene") {
-      const patch = clampConfigPatch(tool.arguments?.patch ?? {});
-      if (Object.keys(patch).length > 0) {
-        applyPatch(patch, "", true);
+    if (result.response.tool_calls.length) {
+      let next = { ...config };
+      for (const tool of result.response.tool_calls) {
+        if (tool.name === "reset_fire_scene") {
+          next = { ...DEFAULT_CONFIG };
+          activePreset = "warm";
+        } else {
+          next = { ...next, ...clampConfigPatch(tool.arguments?.patch ?? {}) };
+          activePreset = "";
+        }
       }
-    } else if (tool?.name === "reset_fire_scene") {
-      activePreset = "warm";
-      applyConfig({ ...DEFAULT_CONFIG }, "", true);
+      applyConfig(next, "", true);
       updatePresetState();
     }
     messages.push(result.assistantMessage);
@@ -1076,7 +1084,6 @@ function updatePresetState(): void {
 }
 
 function switchTab(tab: string): void {
-  if (staticDeployment) tab = "controls";
   document.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => {
     const active = button.dataset.tab === tab;
     button.classList.toggle("is-active", active);
@@ -1094,7 +1101,7 @@ function renderConversation(): void {
         <article class="message ${message.role} ${message.error ? "is-error" : ""}">
           ${
             message.role === "assistant"
-              ? `<span class="message-avatar"><i data-lucide="bot"></i></span>`
+              ? `<span class="message-avatar"><i data-message-icon="bot"></i></span>`
               : ""
           }
           <div class="message-body">
@@ -1118,7 +1125,7 @@ function renderConversation(): void {
       `,
     )
     .join("");
-  createIcons({ icons: { Bot } });
+  createIcons({ icons: { Bot }, nameAttr: "data-message-icon" });
   conversation.scrollTop = conversation.scrollHeight;
 }
 
@@ -1133,7 +1140,7 @@ function setSending(value: boolean): void {
 
 async function checkAgentHealth(): Promise<void> {
   try {
-    const response = await fetch("/api/health", { signal: AbortSignal.timeout(2200) });
+    const response = await fetch("/api/health", { signal: AbortSignal.timeout(8000) });
     setAgentStatus(response.ok);
   } catch {
     setAgentStatus(false);
@@ -1192,8 +1199,8 @@ function setImmersive(value: boolean): void {
 
 function setIcon(selector: string, name: string): void {
   const button = requiredElement<HTMLButtonElement>(selector);
-  button.innerHTML = `<i data-lucide="${name}"></i>`;
-  createIcons({ icons: { Pause, Play, Volume2, VolumeX, Maximize2, Minimize2 } });
+  button.innerHTML = `<i data-control-icon="${name}"></i>`;
+  createIcons({ icons: { Pause, Play, Volume2, VolumeX, Maximize2, Minimize2 }, nameAttr: "data-control-icon" });
 }
 
 function showToast(message: string): void {

@@ -2,8 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "installCommand": "npm ci",
-  "buildCommand": "VITE_STATIC_DEPLOYMENT=true npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 60
+    }
+  },
   "routes": [
     {
       "src": "/(?:capture(?:\\.html)?|capture-api|dist-capture)(?:/.*)?",

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "postinstall": "node scripts/prepare-gesture.mjs",
+    "dev:api": "node scripts/agent-server.mjs",
     "dev": "vite",
     "predev:capture": "node scripts/prepare-gesture.mjs",
     "dev:capture": "vite --config vite.capture.config.ts",

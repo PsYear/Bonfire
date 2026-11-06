@@ -1,8 +1,10 @@
 import {
   DEFAULT_CONFIG,
+  clampConfigPatch,
   type AgentResponse,
   type ChatMessage,
   type FireSceneConfig,
+  type FireScenePatch,
   type TokenUsage,
 } from "./types";
 
@@ -40,13 +42,15 @@ const SYSTEM_PROMPT = `你是 Bonfire 篝火工作台中的场景控制 Agent。
 - 支持任意火焰颜色。绿色、紫色、蓝色等描述必须选取对应十六进制颜色并调用 update_fire_scene，patch 只含 flameColor，回复简短说明所选色值；例如绿色 "#00FF66"、紫色 "#9B30FF"、蓝色 "#0066FF"。不能回复颜色不支持，也不能强行映射为金黄或白热。
 - 用户给出具体十六进制色值时原样采用该颜色；“更偏蓝/浅一点”等在当前颜色基础上调整 flameColor。只改颜色时保留火势、风力、风向循环与其余参数。
 - “自然金黄/暗红余烬/白热中心”使用对应 flameTone；“恢复自然颜色/取消自定义颜色”设置 flameColor=null。预设色调会清除自定义颜色。
-- 不支持、含糊或危险的指令不调用工具，并在 reply 中简短说明。
+- 用户提出游戏、幻想或其他主题时，主动用现有火焰、火星、烟雾和灯光参数营造对应氛围；不声称添加了当前场景没有的模型、纹理或物件。
+- 不支持或确实无法确定的指令不调用工具，简短说明。
 - 不编造渲染进度，不输出 Markdown。
-- 严格只返回一个 JSON 对象，格式：
-{"reply":"给用户的简短说明","tool_calls":[{"name":"update_fire_scene","arguments":{"patch":{"burnIntensity":70}}}]}
-- 无修改时返回 {"reply":"...","tool_calls":[]}。`;
+- 修改场景必须调用提供的原生工具 update_fire_scene 或 reset_fire_scene，工具参数 reply 为给用户的简短中文说明；一次调整尽量合并到一个 patch。
+- 不要在正文中手写 JSON、tool_calls 或工具调用代码。
+- 普通聊天或无需修改时直接用自然语言回复；没有调用工具时不得声称已经修改了场景。`;
 
 interface ApiResponse {
+  response?: unknown;
   content?: string;
   detail?: string;
   usage?: Partial<TokenUsage> | null;
@@ -115,7 +119,7 @@ export class BonfireAgent {
     } catch {
       throw new AgentRequestError(`模型接口返回异常（${request.status}），请稍后重试`);
     }
-    if (!request.ok || !result.content) {
+    if (!request.ok || (!result.response && !result.content)) {
       const detail = typeof result.detail === "string" ? result.detail : `模型服务返回 ${request.status}`;
       throw new AgentRequestError(
         detail.replaceAll(apiKey.trim(), "[已隐藏]"),
@@ -126,7 +130,7 @@ export class BonfireAgent {
     const usage = tokenUsage(result.usage);
     let parsed: AgentResponse;
     try {
-      parsed = this.parseResponse(result.content);
+      parsed = this.parseResponse(result.response ?? JSON.parse(result.content!));
     } catch {
       throw new AgentRequestError("无法解析模型工具调用，请重试", usage);
     }
@@ -157,31 +161,23 @@ export class BonfireAgent {
     this.history = [];
   }
 
-  private parseResponse(raw: string): AgentResponse {
-    const normalized = raw
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "");
-    const start = normalized.indexOf("{");
-    const end = normalized.lastIndexOf("}");
-    if (start < 0 || end <= start) {
-      throw new Error("模型未返回有效的工具调用");
+  private parseResponse(raw: unknown): AgentResponse {
+    if (!raw || typeof raw !== "object") throw new Error("模型响应无效");
+    const value = raw as Partial<AgentResponse>;
+    if (typeof value.reply !== "string" || !Array.isArray(value.tool_calls)) {
+      throw new Error("模型响应结构不完整");
     }
-    try {
-      const value = JSON.parse(normalized.slice(start, end + 1)) as Partial<AgentResponse>;
-      if (typeof value.reply !== "string" || !Array.isArray(value.tool_calls)) {
-        throw new Error("响应结构不完整");
+    const tool_calls = value.tool_calls.map((call) => {
+      if (call?.name === "reset_fire_scene") return { name: call.name };
+      if (call?.name !== "update_fire_scene" || !call.arguments?.patch ||
+          typeof call.arguments.patch !== "object" || Array.isArray(call.arguments.patch)) {
+        throw new Error("模型工具调用无效");
       }
-      return {
-        reply: value.reply,
-        tool_calls: value.tool_calls.filter(
-          (call) => call?.name === "update_fire_scene" || call?.name === "reset_fire_scene",
-        ),
-      };
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "未知解析错误";
-      throw new Error(`无法解析模型工具调用：${detail}`);
-    }
+      const patch = clampConfigPatch(call.arguments.patch as FireScenePatch);
+      if (!Object.keys(patch).length) throw new Error("模型场景参数无效");
+      return { name: call.name, arguments: { patch } };
+    });
+    return { reply: value.reply, tool_calls };
   }
 }
 

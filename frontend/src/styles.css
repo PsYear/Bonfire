@@ -70,12 +70,6 @@ summary:focus-visible {
   height: 100%;
 }
 
-.is-static-deployment [data-tab="agent"],
-.is-static-deployment #agent-view,
-.is-static-deployment .guide-agent {
-  display: none;
-}
-
 .scene-host {
   position: absolute;
   inset: 0;
@@ -105,24 +99,90 @@ summary:focus-visible {
 }
 
 .topbar {
+  container-name: header;
+  container-type: inline-size;
   position: absolute;
   z-index: 10;
   top: 0;
   left: 0;
   right: var(--scene-right-space);
-  height: 84px;
+  min-height: 84px;
   padding: 20px 24px 20px 26px;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 20px;
+  align-items: start;
   pointer-events: none;
   transition: opacity 280ms ease, transform 280ms ease, right 280ms ease;
 }
 
 .brand-lockup,
+.repository-badge,
 .topbar-actions,
 .scene-status {
   pointer-events: auto;
+}
+
+.brand-area {
+  container-name: brand;
+  container-type: inline-size;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.repository-badge {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  color: var(--ink);
+  background: linear-gradient(135deg, rgba(255, 178, 101, 0.06), transparent), rgba(14, 15, 15, 0.8);
+  border: 1px solid rgba(255, 178, 101, 0.18);
+  border-radius: 9px;
+  backdrop-filter: blur(14px);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  text-decoration: none;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.repository-badge > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repository-badge svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--ember-soft);
+  stroke-width: 1.6;
+}
+
+.repository-badge:hover {
+  color: var(--ember-soft);
+  background-color: rgba(40, 29, 21, 0.9);
+  border-color: rgba(255, 178, 101, 0.4);
+}
+
+.repository-badge:focus-visible {
+  outline: 1px solid var(--ember-soft);
+  outline-offset: 3px;
+}
+
+@container brand (max-width: 250px) {
+  .repository-host {
+    display: none;
+  }
 }
 
 .brand-lockup {
@@ -167,6 +227,7 @@ summary:focus-visible {
 }
 
 .scene-status {
+  margin-top: 6px;
   justify-self: center;
   display: flex;
   align-items: center;
@@ -181,6 +242,12 @@ summary:focus-visible {
   font-size: 9px;
   font-weight: 650;
   letter-spacing: 0.08em;
+}
+
+@container header (max-width: 700px) {
+  .scene-status {
+    display: none;
+  }
 }
 
 .live-dot {
@@ -1858,9 +1925,10 @@ body.immersive.immersive-reveal .studio-panel {
   }
 
   .topbar {
-    height: 70px;
+    min-height: 70px;
     padding: 15px 14px;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
     right: var(--scene-right-space);
   }
 
@@ -1980,6 +2048,7 @@ body.immersive.immersive-reveal .studio-panel {
   }
 
   .brand-lockup span:last-child,
+  .repository-host,
   .topbar-actions .icon-button:nth-child(3),
   .topbar-actions .icon-button:nth-child(4) {
     display: none;

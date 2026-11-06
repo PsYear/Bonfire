@@ -4,6 +4,8 @@
 
 ## Vercel 部署
 
+线上地址：<https://bonfire-azure.vercel.app>。
+
 在当前目录使用已登录的 Vercel CLI：
 
 ```bash
@@ -11,30 +13,28 @@ vercel link --yes --project bonfire
 vercel deploy --prod --yes
 ```
 
-`vercel.json` 使用 `VITE_STATIC_DEPLOYMENT=true` 构建，仅发布篝火页面。
-线上默认打开「调节」，保留声音、鼠标、键盘和本地摄像头手势控制；
-Agent 需要独立后端，因此在线上隐藏入口并跳过接口健康检查。
+`vercel.json` 发布篝火页面与 `api/chat.js`、`api/health.js` 两个 Node.js 函数。
+线上默认打开 Agent，保留声音、鼠标、键盘和本地摄像头手势控制。
+对话使用用户在页面输入的智谱 API Key，由本站接口转发到 GLM 5.3 Flash，
+无需另行部署后端或设置服务端 API Key。
 `.vercelignore` 排除录制页面及其源码、独立构建产物和环境变量文件，
 录制路径与未匹配路径返回 404。后续部署沿用同一配置。
 
 ## 启动
 
-当前目录包含前端与 PRD，尚未包含 `backend` 目录。篝火渲染、鼠标和键盘控制
-可以独立运行；Agent 需要 `127.0.0.1:8000` 上的 GLM 接口，手势样本存储
-需要 `127.0.0.1:8001` 上的采集接口。若本机已有这些服务，可以直接启动前端。
-下列后端启动命令适用于已补齐 `backend` 目录的情况。
+在 `frontend` 目录运行，使用 Node.js 22 或更新版本。篝火渲染、鼠标、键盘及
+实时手势控制可以独立运行；Agent 本地接口与 Vercel 使用同一份实现。
 
-先从仓库根目录启动 GLM 接口：
+先安装依赖并启动 Agent 接口：
 
 ```bash
-PYTHONPATH=backend python3 -m uvicorn llm_api.server:app --host 127.0.0.1 --port 8000
+npm ci
+npm run dev:api
 ```
 
-再启动前端：
+接口默认监听 `127.0.0.1:8002`，Vite 将 `/api` 代理到这里。另开终端启动前端：
 
 ```bash
-cd frontend
-npm install
 npm run dev
 ```
 
@@ -51,13 +51,19 @@ npm run dev -- --port 5180 --strictPort
 在 Agent 输入框上方右侧点击「输入 API Key」，输入智谱 API Key 后保存。
 默认勾选「记住此浏览器」，刷新后自动使用；取消勾选仅在当前页面内存中使用。
 同一按钮可替换或清除 Key。尚未设置 Key 时执行指令会打开设置窗口并保留输入。
-后端无需 Key 即可启动，只使用每次请求的 `Authorization: Bearer`，不读取本地
-密钥文件或环境变量，也不保存页面提交的 Key。浏览器缓存使用 `localStorage`
+本站接口无需 Key 即可启动，只使用每次请求的 `Authorization: Bearer`，不读取本地
+密钥文件或环境变量，也不保存或记录页面提交的 Key。上游使用智谱的 Anthropic
+兼容协议，提供原生 `update_fire_scene` / `reset_fire_scene` 工具，保留多轮上下文与实际
+Token 用量。接口统一处理原生工具块与旧版 JSON 回复；普通聊天直接显示文本。
+游戏或幻想主题通过现有火焰、烟雾、火星和灯光参数营造氛围。非法或截断的工具调用
+不会修改现场；一条回复中的多项调整合并执行，支持一次撤销。浏览器缓存使用 `localStorage`
 的 `bonfire.api-key`；存储被禁用时退回当前页面内存。
 每条模型回复下显示接口实际返回的输入、输出 Token 数，包含该次上下文与工具指令；
 接口未返回的计数字段显示「未返回」。开场提示、撤销提示及未调用模型的操作不计用量。
 
 ## 独立手势采集页
+
+录制页面仅供本地使用，依赖另外补齐的 `backend` 采集服务，不随 Vercel 发布。
 
 先在仓库根目录启动采集存储服务：
 
